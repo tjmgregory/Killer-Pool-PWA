@@ -13,8 +13,8 @@
     [
       "@codedependant/semantic-release-docker",
       {
-        "dockerRegistry": "europe-west6-docker.pkg.dev",
-        "dockerProject": "smartive-internal-shared/killer-pool-pwa-docker",
+        "dockerRegistry": "eu.gcr.io",
+        "dockerProject": "smartive-internal-shared/smartive/hack/killer-pool-pwa",
         "dockerImage": "killer-pool-api",
         "dockerLogin": false,
         "dockerContext": "./api",

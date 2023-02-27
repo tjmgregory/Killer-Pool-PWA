@@ -12,7 +12,7 @@ resource "google_cloud_run_service" "api" {
 
     spec {
       containers {
-        image = "europe-west6-docker.pkg.dev/smartive-internal-shared/killer-pool-pwa-docker/killer-pool-api:${var.release_version}"
+        image = "eu.gcr.io/smartive-internal-shared/smartive/hack/killer-pool-pwa/killer-pool-api:${var.release_version}"
 
         resources {
           limits = {
