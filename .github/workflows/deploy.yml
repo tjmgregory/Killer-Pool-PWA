@@ -24,6 +24,13 @@ jobs:
         with:
           credentials_json: '${{ secrets.TF_DEPLOYER_KEY }}'
 
+      - name: Login to Google Artifact Registry
+        uses: docker/login-action@v2
+        with:
+          registry: eu.gcr.io
+          username: _json_key
+          password: ${{ secrets.TF_DEPLOYER_KEY }}
+
       - name: Semantic Release
         id: semantic
         uses: cycjimmy/semantic-release-action@v3
