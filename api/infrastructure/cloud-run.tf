@@ -26,27 +26,27 @@ resource "google_cloud_run_service" "api" {
         }
 
         env {
-          name  = "DATABASE_HOST"
+          name  = "DATABASE__HOST"
           value = "/cloudsql/${data.terraform_remote_state.shared.outputs.pgsql-db-instance-connection-name}"
         }
 
         env {
-          name  = "DATABASE_PORT"
+          name  = "DATABASE__PORT"
           value = "5432"
         }
 
         env {
-          name  = "DATABASE_NAME"
+          name  = "DATABASE__NAME"
           value = google_sql_database.db.name
         }
 
         env {
-          name  = "DATABASE_USER"
+          name  = "DATABASE__USER"
           value = google_sql_user.db-user.name
         }
 
         env {
-          name  = "DATABASE_PASS"
+          name  = "DATABASE__PASS"
           value = random_password.database.result
         }
 
