@@ -1,0 +1,31 @@
+{
+  "branches": ["main"],
+  "plugins": [
+    "@semantic-release/commit-analyzer",
+    "@semantic-release/release-notes-generator",
+    [
+      "@semantic-release/github",
+      {
+        "successComment": false,
+        "failComment": false
+      }
+    ],
+    [
+      "@codedependant/semantic-release-docker",
+      {
+        "dockerRegistry": "europe-west6-docker.pkg.dev",
+        "dockerProject": "smartive-internal-shared/killer-pool-pwa-docker",
+        "dockerImage": "killer-pool-api",
+        "dockerLogin": false,
+        "dockerContext": "./api",
+        "dockerFile": "./api.dockerfile",
+        "dockerTags": ["{{major}}.{{minor}}.{{patch}}", "{{major}}.{{minor}}", "{{major}}-latest", "{{git_sha}}", "latest"],
+        "dockerArgs": {
+          "BUILD_VERSION": "{{major}}.{{minor}}.{{patch}}",
+          "COMMIT_SHA": "{{git_sha}}"
+        },
+        "dockerAutoClean": false
+      }
+    ]
+  ]
+}
