@@ -1,6 +1,5 @@
 {
   "branches": ["main"],
-  "repositoryUrl": "git@github.com:buehler/Killer-Pool-PWA.git",
   "plugins": [
     "@semantic-release/commit-analyzer",
     "@semantic-release/release-notes-generator",
