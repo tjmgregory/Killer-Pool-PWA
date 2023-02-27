@@ -18,7 +18,7 @@
         "dockerImage": "killer-pool-api",
         "dockerLogin": false,
         "dockerContext": "./api",
-        "dockerFile": "./api.dockerfile",
+        "dockerFile": "./api/api.dockerfile",
         "dockerTags": ["{{major}}.{{minor}}.{{patch}}", "{{major}}.{{minor}}", "{{major}}-latest", "{{git_sha}}", "latest"],
         "dockerArgs": {
           "BUILD_VERSION": "{{major}}.{{minor}}.{{patch}}",
