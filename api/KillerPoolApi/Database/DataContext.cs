@@ -46,7 +46,7 @@ public class DataContext : DbContext
 
     public async Task<string> GetNewGameId()
     {
-        const string AllowableCharacters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+        const string AllowableCharacters = "abcdefghijklmnopqrstuvwxyz0123456789";
         const byte length = 6;
         var randomNumberGenerator = RandomNumberGenerator.Create();
 

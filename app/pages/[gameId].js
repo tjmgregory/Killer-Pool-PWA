@@ -1,8 +1,9 @@
 import Button from '@/components/button';
+import Heading from '@/components/heading';
 import LoadingSpinner from '@/components/loader';
-import Navigation from '@/components/nav';
 import { advanceGame, fetchGame, leaveGame, startGame } from '@/services/api';
 import { useUserId } from '@/services/localstorage';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
@@ -53,65 +54,70 @@ export default function GameDetails() {
 
   return (
     <>
-      <Navigation />
+      <Head>
+        <title>Game</title>
+      </Head>
       {game == null ? (
-        <LoadingSpinner />
+        <div className="text-center mx-auto mt-8">
+          <LoadingSpinner />
+        </div>
       ) : (
-        <main className="p-2">
-          <h1>Game {game.name}</h1>
-          <h2>Code to join: {game.id}</h2>
-          <div>{game.started ? 'started' : 'not started yet'}</div>
-          <div>{game.finished ? 'finished' : 'not finished yet'}</div>
+        <main>
+          <Heading>Game &quot;{game.name}&quot;</Heading>
 
-          <div>
-            <h4>actions</h4>
-            <ul>
-              {game.hostId == uid && !game.started ? (
-                <li>
-                  <Button onClick={start}>start</Button>
-                </li>
-              ) : null}
-              {game.hostId != uid && !game.started ? (
-                <li>
-                  <Button onClick={leave}>leave</Button>
-                </li>
-              ) : null}
-            </ul>
-          </div>
+          {!game.started ? (
+            <div className="mb-8">
+              <Heading level="3">Code To Join</Heading>
+              <code className="text-2xl font-mono text-orange-600">{game.id}</code>
+            </div>
+          ) : null}
+
+          <ul className="mb-8">
+            {game.hostId == uid && !game.started ? (
+              <li>
+                <Button onClick={start}>start</Button>
+              </li>
+            ) : null}
+            {game.hostId != uid && !game.started ? (
+              <li>
+                <Button onClick={leave}>leave</Button>
+              </li>
+            ) : null}
+          </ul>
 
           {game.finished ? (
-            <div>
-              <h2>Winner</h2>
-              <p>{game.participants.find((p) => p.playerId == game.winnerId).player.name}</p>
+            <div className="mb-8">
+              <Heading level="2">Winner</Heading>
+              <p className="text-xl">&gt; {game.participants.find((p) => p.playerId == game.winnerId).player.name} &lt;</p>
             </div>
           ) : null}
 
           {game.started && !game.finished ? (
             <div>
-              <h2>
-                Current Turn: {game.participants.find((p) => p.playerId == game.nextPlayer).player.name} (
+              <Heading level="4">
+                <span className="text-slate-500">Current Turn:</span>{' '}
+              </Heading>
+              <Heading level="2">
+                {game.participants.find((p) => p.playerId == game.nextPlayer).player.name} (
                 {game.participants.find((p) => p.playerId == game.nextPlayer).lives} lives)
-              </h2>
+              </Heading>
               {game.hostId == uid || game.nextPlayer == uid ? (
-                <div>
-                  <h5>Result</h5>
-                  <ul>
-                    <li>
-                      <Button onClick={() => advance(-1)}>Foul (-1)</Button>
-                    </li>
-                    <li>
-                      <Button onClick={() => advance(0)}>Stay (0)</Button>
-                    </li>
-                    <li>
-                      <Button onClick={() => advance(+1)}>Black Ball (+1)</Button>
-                    </li>
-                  </ul>
-                </div>
+                <ul className="flex space-x-4 mb-8">
+                  <li>
+                    <Button onClick={() => advance(-1)}>Foul (-1)</Button>
+                  </li>
+                  <li>
+                    <Button onClick={() => advance(0)}>Stay (0)</Button>
+                  </li>
+                  <li>
+                    <Button onClick={() => advance(+1)}>Black Ball (+1)</Button>
+                  </li>
+                </ul>
               ) : null}
             </div>
           ) : null}
 
-          <h2>Participants</h2>
+          <Heading level="2">Participants</Heading>
           <ul>
             {game.participants
               .sort((a, b) => a.order - b.order)

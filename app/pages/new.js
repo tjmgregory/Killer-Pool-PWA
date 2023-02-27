@@ -1,7 +1,9 @@
 import Button from '@/components/button';
-import Navigation from '@/components/nav';
+import FormInput from '@/components/formInput';
+import Heading from '@/components/heading';
 import { createGame } from '@/services/api';
 import { useUsername } from '@/services/localstorage';
+import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useState } from 'react';
 
@@ -21,16 +23,18 @@ export default function New() {
 
   return (
     <>
-      <Navigation />
+      <Head>
+        <title>Killer Pool - Create new game</title>
+      </Head>
       <main className="p-2">
-        <h1>create new game</h1>
-        <div>
-          <label>username</label>
-          <input className="border" value={username} onChange={(e) => setUsername(e.target.value)} />
-        </div>
-        <div>
-          <label>gamename</label>
-          <input className="border" value={gamename} onChange={(e) => setGamename(e.target.value)} />
+        <Heading>Create new game</Heading>
+        <div className="grid grid-cols-1 md:grid-cols-2 md:gap-x-2">
+          <div className="mb-4">
+            <FormInput label="Your name" placeholder="The Pool God." value={username} onChange={setUsername} />
+          </div>
+          <div className="mb-4">
+            <FormInput label="Name the game" placeholder="Irish Embassy the forth" value={gamename} onChange={setGamename} />
+          </div>
         </div>
         <Button onClick={createNewGame}>create</Button>
       </main>
