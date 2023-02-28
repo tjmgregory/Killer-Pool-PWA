@@ -42,7 +42,7 @@ resource "google_cloud_run_service" "api" {
 
         env {
           name  = "ROCKET_DATABASES"
-          value = "{data={url=\"postgres://${google_sql_user.db-user.name}:${random_password.database.result}@/cloudsql/${data.terraform_remote_state.shared.outputs.pgsql-db-instance-connection-name}/${google_sql_database.db.name}\"}}"
+          value = "{data={url=\"postgres://${google_sql_user.db-user.name}:${random_password.database.result}@${google_sql_database.db.name}?host=/cloudsql/${data.terraform_remote_state.shared.outputs.pgsql-db-instance-connection-name}\"}}"
         }
 
       }
