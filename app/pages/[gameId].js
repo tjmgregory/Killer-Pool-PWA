@@ -19,28 +19,33 @@ export default function GameDetails() {
     console.log(`Current notifcation permission: ${window.Notification.permission}`);
 
     (async function () {
-      if (window && window.Notification && window.Notification.permission !== 'denied') {
-        console.log('Requesting notification permission');
-        const result = await window.Notification.requestPermission();
-        console.log(`Result: ${result}`);
+      try {
+        if (window && window.Notification && window.Notification.permission !== 'denied') {
+          console.log('Requesting notification permission');
+          const result = await window.Notification.requestPermission();
+          console.log(`Result: ${result}`);
 
-        if (result == 'granted') {
-          await navigator.serviceWorker.ready;
-          const registration = await navigator.serviceWorker.getRegistration();
+          if (result == 'granted') {
+            await navigator.serviceWorker.ready;
+            const registration = await navigator.serviceWorker.getRegistration();
 
-          const sub = await registration.pushManager.getSubscription();
-          if (!sub) {
-            console.log('no subscription found, creating.');
-            const newSub = await registration.pushManager.subscribe({
-              userVisibleOnly: true,
-              applicationServerKey: process.env.NEXT_PUBLIC_PUSH_KEY,
-            });
+            const sub = await registration.pushManager.getSubscription();
+            if (!sub) {
+              console.log('no subscription found, creating.');
+              const newSub = await registration.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: process.env.NEXT_PUBLIC_PUSH_KEY,
+              });
 
-            await storeSubscription(newSub);
-          } else {
-            console.info('subscription found', sub);
+              await storeSubscription(newSub);
+            } else {
+              console.info('subscription found', sub);
+              await storeSubscription(sub);
+            }
           }
         }
+      } catch (e) {
+        console.error(e);
       }
     })();
   }, []);
