@@ -4,7 +4,7 @@ const url = process.env.NEXT_PUBLIC_API_URL;
 
 export const getParticipatingGames = async () => {
   const userId = getUserId();
-  const response = await fetch(`${url}/games?userId=${userId}`);
+  const response = await fetch(`${url}/games?user_id=${userId}`);
   const json = await response.json();
   return json;
 };
@@ -17,8 +17,8 @@ export const createGame = async (gameName) => {
     },
     body: JSON.stringify({
       name: gameName,
-      hostId: getUserId(),
-      hostName: getUsername(),
+      host_id: getUserId(),
+      host_name: getUsername(),
     }),
   });
   const gameId = await response.text();
@@ -59,22 +59,39 @@ export const startGame = async (gameId) => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      hostId: getUserId(),
-      gameId,
+      host_id: getUserId(),
+      game_id: gameId,
     }),
   });
 };
 
 export const advanceGame = async (gameId, result, userId) => {
   console.log(`advance game. gameId: ${gameId}, userId: ${userId}`);
-  await fetch(`${url}/games/${gameId}`, {
-    method: 'PUT',
+  await fetch(`${url}/games/${gameId}/advance`, {
+    method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      playerId: userId ?? getUserId(),
+      player_id: userId ?? getUserId(),
       result,
+    }),
+  });
+};
+
+export const storeSubscription = async (subscription) => {
+  console.log('storing subscription', subscription);
+  const sub = subscription.toJSON();
+  await fetch(`${url}/players/subscribe`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      player_id: getUserId(),
+      endpoint: sub.endpoint,
+      auth: sub.keys.auth,
+      p256dh: sub.keys.p256dh,
     }),
   });
 };

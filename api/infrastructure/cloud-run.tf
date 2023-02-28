@@ -21,33 +21,28 @@ resource "google_cloud_run_service" "api" {
         }
 
         ports {
-          name           = "http1"
-          container_port = 8080
+          name           = "h2c"
+          container_port = 8000
         }
 
         env {
-          name  = "DATABASE__HOST"
-          value = "/cloudsql/${data.terraform_remote_state.shared.outputs.pgsql-db-instance-connection-name}"
+          name  = "PUSH_SUBJECT"
+          value = "mailto: <test@foobar.dev>"
         }
 
         env {
-          name  = "DATABASE__PORT"
-          value = "5432"
+          name  = "PUSH_PUBLIC_KEY"
+          value = var.push_public
         }
 
         env {
-          name  = "DATABASE__NAME"
-          value = google_sql_database.db.name
+          name  = "PUSH_PRIVATE_KEY"
+          value = var.push_private
         }
 
         env {
-          name  = "DATABASE__USER"
-          value = google_sql_user.db-user.name
-        }
-
-        env {
-          name  = "DATABASE__PASS"
-          value = random_password.database.result
+          name  = "ROCKET_DATABASES"
+          value = "{data={url=\"postgres://${google_sql_user.db-user.name}:${random_password.database.result}@/cloudsql/${data.terraform_remote_state.shared.outputs.pgsql-db-instance-connection-name}/${google_sql_database.db.name}\"}}"
         }
 
       }

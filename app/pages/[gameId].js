@@ -1,26 +1,52 @@
 import Button from '@/components/button';
 import Heading from '@/components/heading';
 import LoadingSpinner from '@/components/loader';
-import { advanceGame, fetchGame, leaveGame, startGame } from '@/services/api';
+import { advanceGame, leaveGame, startGame, storeSubscription } from '@/services/api';
+import { gameHostId, gameWinner, isGameFinished, isGameNotFinished } from '@/services/helpers';
+import { useGameUpdates } from '@/services/hooks';
 import { useUserId } from '@/services/localstorage';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
 export default function GameDetails() {
   const router = useRouter();
   const uid = useUserId();
   const { gameId } = router.query;
-  const [game, setGame] = useState(null);
+  const game = useGameUpdates(gameId);
 
-  async function fetch() {
-    const game = await fetchGame(gameId);
-    setGame(game);
-  }
+  useEffect(() => {
+    console.log(`Current notifcation permission: ${window.Notification.permission}`);
+
+    (async function () {
+      if (window && window.Notification && window.Notification.permission !== 'denied') {
+        console.log('Requesting notification permission');
+        const result = await window.Notification.requestPermission();
+        console.log(`Result: ${result}`);
+
+        if (result == 'granted') {
+          await navigator.serviceWorker.ready;
+          const registration = await navigator.serviceWorker.getRegistration();
+
+          const sub = await registration.pushManager.getSubscription();
+          if (!sub) {
+            console.log('no subscription found, creating.');
+            const newSub = await registration.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: process.env.NEXT_PUBLIC_PUSH_KEY,
+            });
+
+            await storeSubscription(newSub);
+          } else {
+            console.info('subscription found', sub);
+          }
+        }
+      }
+    })();
+  }, []);
 
   async function start() {
     await startGame(gameId);
-    await fetch();
   }
 
   async function leave() {
@@ -29,28 +55,8 @@ export default function GameDetails() {
   }
 
   async function advance(result) {
-    await advanceGame(gameId, result, game.nextPlayer);
-    await fetch();
+    await advanceGame(gameId, result, game.next_player);
   }
-
-  useEffect(() => {
-    if (gameId == null) {
-      return;
-    }
-
-    fetch();
-  }, [gameId]);
-
-  useEffect(() => {
-    // if the game is finished. no need to refresh anymore.
-    if (game?.finished) {
-      return;
-    }
-
-    // Poll each 3 seconds for update.
-    const id = setInterval(fetch, 3000);
-    return () => clearInterval(id);
-  }, [gameId, game?.finished]);
 
   return (
     <>
@@ -73,35 +79,35 @@ export default function GameDetails() {
           ) : null}
 
           <ul className="mb-8">
-            {game.hostId == uid && !game.started ? (
+            {gameHostId(game) == uid && !game.started && game.players.length >= 2 ? (
               <li>
                 <Button onClick={start}>start</Button>
               </li>
             ) : null}
-            {game.hostId != uid && !game.started ? (
+            {gameHostId(game) != uid && !game.started ? (
               <li>
                 <Button onClick={leave}>leave</Button>
               </li>
             ) : null}
           </ul>
 
-          {game.finished ? (
+          {isGameFinished(game) ? (
             <div className="mb-8">
               <Heading level="2">Winner</Heading>
-              <p className="text-xl">&gt; {game.participants.find((p) => p.playerId == game.winnerId).player.name} &lt;</p>
+              <p className="text-xl">&gt; {gameWinner(game).name} &lt;</p>
             </div>
           ) : null}
 
-          {game.started && !game.finished ? (
+          {game.started && isGameNotFinished(game) ? (
             <div>
               <Heading level="4">
                 <span className="text-slate-500">Current Turn:</span>{' '}
               </Heading>
               <Heading level="2">
-                {game.participants.find((p) => p.playerId == game.nextPlayer).player.name} (
-                {game.participants.find((p) => p.playerId == game.nextPlayer).lives} lives)
+                {game.players.find((p) => p.id == game.next_player).name} (
+                {game.players.find((p) => p.id == game.next_player).lives} lives)
               </Heading>
-              {game.hostId == uid || game.nextPlayer == uid ? (
+              {gameHostId(game) == uid || game.next_player == uid ? (
                 <ul className="flex space-x-4 mb-8">
                   <li>
                     <Button onClick={() => advance(-1)}>Foul (-1)</Button>
@@ -119,11 +125,11 @@ export default function GameDetails() {
 
           <Heading level="2">Participants</Heading>
           <ul>
-            {game.participants
+            {game.players
               .sort((a, b) => a.order - b.order)
               .map((participant) => (
-                <li key={participant.playerId}>
-                  {participant.player.name} {participant.isHost ? '[Host]' : ''} ({participant.lives} lives)
+                <li key={participant.id}>
+                  {participant.name} {participant.is_host ? '[Host]' : ''} ({participant.lives} lives)
                 </li>
               ))}
           </ul>

@@ -3,6 +3,7 @@ import FormInput from '@/components/formInput';
 import Heading from '@/components/heading';
 import { ButtonLink, Link } from '@/components/link';
 import { getParticipatingGames, joinGame } from '@/services/api';
+import { isGameFinished, isGameNotFinished } from '@/services/helpers';
 import { useUsername } from '@/services/localstorage';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
@@ -20,24 +21,6 @@ export default function Home() {
       setGames(games);
     })();
   }, []);
-
-  // useEffect(() => {
-  //   console.log(`Current notifcation permission: ${window.Notification.permission}`);
-
-  //   (async function () {
-  //     if (window && window.Notification && window.Notification.permission !== 'denied') {
-  //       console.log('Requesting notification permission');
-  //       const result = await window.Notification.requestPermission();
-  //       console.log(`Result: ${result}`);
-
-  //       if (result == 'granted') {
-  //         await navigator.serviceWorker.ready;
-  //         const registration = await navigator.serviceWorker.getRegistration();
-  //         registration.pushManager.subscribe({});
-  //       }
-  //     }
-  //   })();
-  // }, []);
 
   async function join() {
     if (!username || !gameToken) {
@@ -74,29 +57,25 @@ export default function Home() {
         <div className="mb-8">
           <Heading level="3">Ongoing Games</Heading>
           <ul>
-            {games
-              .filter((g) => !g.finished)
-              .map((g) => (
-                <li key={g.id}>
-                  <Link href={`/${g.id}`}>
-                    {g.name} ({g.participants.length} players) {g.started ? '' : 'not'} started
-                  </Link>
-                </li>
-              ))}
+            {games.filter(isGameNotFinished).map((g) => (
+              <li key={g.id}>
+                <Link href={`/${g.id}`}>
+                  {g.name} ({g.players.length} players) {g.started ? '' : 'not'} started
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
         <div>
           <Heading level="3">Finished Games</Heading>
           <ul>
-            {games
-              .filter((g) => g.finished)
-              .map((g) => (
-                <li key={g.id}>
-                  <Link href={`/${g.id}`}>
-                    {g.name} ({g.participants.length} players)
-                  </Link>
-                </li>
-              ))}
+            {games.filter(isGameFinished).map((g) => (
+              <li key={g.id}>
+                <Link href={`/${g.id}`}>
+                  {g.name} ({g.players.length} players)
+                </Link>
+              </li>
+            ))}
           </ul>
         </div>
       </main>

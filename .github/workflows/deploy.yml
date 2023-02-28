@@ -65,3 +65,5 @@ jobs:
         env:
           TF_HTTP_PASSWORD: ${{ secrets.SHARED_STATE_PASSWORD }}
           TF_VAR_release_version: ${{ needs.release.outputs.new_release_version }}
+          TF_VAR_push_private: ${{ secrets.PUSH_PRIVATE }}
+          TF_VAR_push_public: ${{ secrets.PUSH_PUBLIC }}

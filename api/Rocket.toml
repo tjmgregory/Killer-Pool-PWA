@@ -1,0 +1,9 @@
+[global]
+address = "0.0.0.0"
+
+[default.databases.data]
+url = "postgres://user:pass@localhost:5432/db"
+min_connections = 1
+max_connections = 5
+connect_timeout = 5
+idle_timeout = 120

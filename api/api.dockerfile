@@ -1,21 +1,38 @@
-### Build
-FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
+FROM rust:1.66-alpine as build
+
+RUN apk add --update --no-cache openssl-dev musl-dev libpq-dev
+RUN rustup component add rustfmt
 
 WORKDIR /app
 
-COPY . ./
+COPY . .
 
-RUN dotnet publish --configuration Release -o ./artifacts KillerPoolApi
+ENV RUSTFLAGS="-C target-feature=-crt-static"
+RUN cargo install --path .
 
-### Deploy
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS final
+FROM alpine:3.17
 
 WORKDIR /app
 
-COPY --from=build /app/artifacts .
+ENV USER=appuser \
+    UID=1000 \
+    ROCKET_PORT=8000 \
+    ROCKET_ADDRESS=0.0.0.0
 
-RUN ln -sf /usr/share/zoneinfo/Europe/Zurich /etc/localtime && \
-  dpkg-reconfigure -f noninteractive tzdata
+COPY --from=build /usr/local/cargo/bin/api /usr/local/bin/api
 
-ENTRYPOINT [ "dotnet" ]
-CMD [ "KillerPoolApi.dll" ]
+RUN adduser \
+    --disabled-password \
+    --gecos "" \
+    --home "/nonexistent" \
+    --shell "/sbin/nologin" \
+    --no-create-home \
+    --uid "${UID}" \
+    "${USER}" && \
+    chown -R appuser:appuser /app && \
+    chmod +x /usr/local/bin/api && \
+    apk add --update --no-cache libgcc ca-certificates
+
+USER appuser:appuser
+
+ENTRYPOINT ["/usr/local/bin/api"]
