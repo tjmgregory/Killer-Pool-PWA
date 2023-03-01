@@ -372,7 +372,7 @@ pub async fn leave_game(
 #[post("/games/<game_id>/advance", data = "<data>")]
 pub async fn advance_game(
     queue: &State<Sender<String>>,
-    push_config: &State<PushConfig>,
+    // push_config: &State<PushConfig>,
     mut db: Connection<Data>,
     game_id: &str,
     data: Json<AdvanceGameData>,
@@ -387,68 +387,99 @@ pub async fn advance_game(
     .bind(data.player_id)
     .execute(&mut *db)
     .await?;
+
+    let participations = sqlx::query(
+        "select
+            p.*,
+            g.*,
+            p2.name player_name,
+            p2.push_endpoint,
+            p2.push_p256dh,
+            p2.push_auth
+        from participations p
+                 inner join games g on g.id = p.game_id
+                 inner join players p2 on p.player_id = p2.id
+        where p.game_id = $1
+        order by p.play_order;",
+    )
+    .bind(game_id)
+    .map(|r: PgRow| DbParticipation {
+        game_id: r.get("game_id"),
+        player_id: r.get("player_id"),
+        is_host: r.get("is_host"),
+        play_order: r.get("play_order"),
+        lives: r.get("lives"),
+        player: Some(DbPlayer {
+            name: r.get("player_name"),
+            push_auth: r.get("push_auth"),
+            push_endpoint: r.get("push_endpoint"),
+            push_p256dh: r.get("push_p256dh"),
+        }),
+        game: Some(DbGame {
+            name: r.get("name"),
+            started: r.get("started"),
+            next_player: r.get("next_player"),
+        }),
+    })
+    .fetch_all(&mut *db)
+    .await?;
+
+    if participations.iter().filter(|p| p.lives > 0).count() <= 1 {
+        // game is over.
+        let _ = queue.send(game_id.to_string());
+        return Ok(NoContent);
+    }
+
+    let current = participations
+        .iter()
+        .find(|p| p.player_id == data.player_id)
+        .unwrap();
+    let mut next = current;
+
+    loop {
+        next = participations
+            .get(((next.play_order as usize) + 1) % participations.len())
+            .unwrap();
+
+        if next.lives > 0 {
+            break;
+        }
+    }
+
     sqlx::query(
         "update games g
-        set next_player =
-        (select nn.n from (select p.player_id, coalesce(
-                               lead(p.player_id) over (order by p.play_order),
-                               first_value(p.player_id) over (order by p.play_order)) as n
-        from participations p
-        where p.game_id = g.id
-        order by p.play_order) as nn where nn.player_id = g.next_player)
+        set next_player = $2
         where g.id = $1;",
     )
     .bind(game_id)
+    .bind(next.player_id)
     .execute(&mut *db)
     .await?;
 
-    let followups = sqlx::query(
-        "select p.player_id,
-                p2.push_endpoint,
-                p2.push_auth,
-                p2.push_p256dh,
-                coalesce(
-                                lead(p.player_id) over (order by p.play_order),
-                                first_value(p.player_id) over (order by p.play_order)) as next_player
-        from participations p
-                inner join players p2 on p.player_id = p2.id
-        where p.game_id = $1
-        order by p.play_order"
-    ).bind(game_id)
-    .map(|r: PgRow| PlayerFollowUp{
-        player: r.get("player_id"),
-        next: r.get("next_player"),
-        push_auth: r.get("push_auth"),
-        push_endpoint: r.get("push_endpoint"),
-        push_p256dh: r.get("push_p256dh"),
-    }).fetch_all(&mut *db).await?;
-
-    let old = followups
-        .iter()
-        .find(|f| f.player == data.player_id)
-        .unwrap();
-    let new = followups.iter().find(|f| f.player == old.next).unwrap();
-
     let _ = queue.send(game_id.to_string());
 
-    if new.push_auth.is_some() && new.push_endpoint.is_some() && new.push_p256dh.is_some() {
-        let client = WebPushClient::new().unwrap();
-        let info = SubscriptionInfo::new(
-            new.push_endpoint.as_ref().unwrap(),
-            new.push_p256dh.as_ref().unwrap(),
-            new.push_auth.as_ref().unwrap(),
-        );
+    // TODO
+    // if next.player.unwrap().push_auth.is_some()
+    //     && next.player.unwrap().push_endpoint.is_some()
+    //     && next.player.unwrap().push_p256dh.is_some()
+    // {
+    //     let client = WebPushClient::new().unwrap();
+    //     let info = SubscriptionInfo::new(
+    //         next.player.unwrap().push_endpoint.as_ref().unwrap(),
+    //         next.player.unwrap().push_p256dh.as_ref().unwrap(),
+    //         next.player.unwrap().push_auth.as_ref().unwrap(),
+    //     );
 
-        let mut builder = WebPushMessageBuilder::new(&info).unwrap();
-        let sig_builder =
-            VapidSignatureBuilder::from_base64(&push_config.private_key, URL_SAFE_NO_PAD, &info)
-                .unwrap();
+    //     let mut builder = WebPushMessageBuilder::new(&info).unwrap();
+    //     let sig_builder =
+    //         VapidSignatureBuilder::from_base64(&push_config.private_key, URL_SAFE_NO_PAD, &info)
+    //             .unwrap();
 
-        let signature = sig_builder.build().unwrap();
-        builder.set_vapid_signature(signature);
-        builder.set_payload(ContentEncoding::Aes128Gcm, "next".as_bytes());
-        let _ = client.send(builder.build().unwrap()).await;
-    }
+    //     let signature = sig_builder.build().unwrap();
+    //     builder.set_vapid_signature(signature);
+    //     builder.set_payload(ContentEncoding::Aes128Gcm, "next".as_bytes());
+    //     let _ = client.send(builder.build().unwrap()).await;
+    // }
 
     Ok(NoContent)
 }
@@ -502,15 +533,6 @@ struct GameInfo {
     pub id: String,
     pub name: String,
     pub host_name: String,
-}
-
-#[derive(Debug, Clone)]
-struct PlayerFollowUp {
-    pub player: Uuid,
-    pub next: Uuid,
-    pub push_endpoint: Option<String>,
-    pub push_auth: Option<String>,
-    pub push_p256dh: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

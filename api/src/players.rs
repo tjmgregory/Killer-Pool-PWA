@@ -1,4 +1,4 @@
-use rocket::{get, post, response::status::NoContent, serde::json::Json, Config};
+use rocket::{post, response::status::NoContent, serde::json::Json};
 use rocket_db_pools::Connection;
 use serde::{Deserialize, Serialize};
 use sqlx::types::Uuid;
