@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
+use names::{Generator, Name};
 use rand::{seq::SliceRandom, thread_rng};
-use random_string::generate;
 use rocket::{
     delete, get, post,
     response::{
@@ -160,14 +160,15 @@ pub async fn fetch_game(mut db: Connection<Data>, id: &str) -> Result<Json<Game>
     Ok(Json(map.get(id).unwrap().clone()))
 }
 
+fn rand_name() -> String {
+    Generator::with_naming(Name::Numbered).next().unwrap()
+}
+
 #[post("/games", data = "<data>")]
 pub async fn create_new_game(
     mut db: Connection<Data>,
     data: Json<CreateNewGame>,
 ) -> Result<String> {
-    let charset = "123456789abcdefghijklmnopqrstuvwxyz";
-    let mut new_id = generate(6, charset);
-
     sqlx::query(
         "insert into players (id, name)
         values ($1, $2)
@@ -179,6 +180,8 @@ pub async fn create_new_game(
     .execute(&mut *db)
     .await?;
 
+    let mut new_id = rand_name();
+
     loop {
         let result = sqlx::query("insert into games (id, name) values ($1, $2)")
             .bind(new_id.clone())
@@ -189,7 +192,7 @@ pub async fn create_new_game(
         if let Ok(_) = result {
             break;
         } else {
-            new_id = generate(6, charset);
+            new_id = rand_name();
         }
     }
 
