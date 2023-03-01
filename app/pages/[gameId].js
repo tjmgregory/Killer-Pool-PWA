@@ -131,7 +131,7 @@ export default function GameDetails() {
             {game.players
               .sort((a, b) => a.order - b.order)
               .map((participant) => (
-                <li key={participant.id}>
+                <li key={participant.id} className={participant.lives === 0 ? 'line-through text-slate-600' : ''}>
                   {participant.name} {participant.is_host ? '[Host]' : ''} ({participant.lives} lives)
                 </li>
               ))}
