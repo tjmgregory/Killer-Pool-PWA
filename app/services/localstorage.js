@@ -28,19 +28,25 @@ export function useUserId() {
 
 export function useUsername() {
   const [username, setUsername] = useState('');
+  const [init, setInit] = useState(false);
 
   useEffect(() => {
     const name = localStorage.getItem(usernameKey);
+    setUsername(name ?? '');
+    setInit(true);
+  }, []);
 
-    if (!username && name != null) {
-      setUsername(name);
+  useEffect(() => {
+    if (!init) {
+      return;
     }
 
-    if (username && name != username) {
-      setUsername(username);
+    if (username) {
       localStorage.setItem(usernameKey, username);
+    } else {
+      localStorage.removeItem(usernameKey);
     }
-  }, [username]);
+  }, [username, init]);
 
   return [username, setUsername];
 }
