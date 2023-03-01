@@ -49,7 +49,12 @@ export default function Home() {
               <FormInput label="Your Name" placeholder="John Doe" value={username} onChange={setUsername} />
             </div>
             <div className="mb-4">
-              <FormInput label="Game ID" placeholder="XYZ123" value={gameToken} onChange={setGameToken} />
+              <FormInput
+                label="Game ID"
+                placeholder="foo-bar"
+                value={gameToken}
+                onChange={(val) => setGameToken(val.toLowerCase())}
+              />
             </div>
           </div>
           <Button onClick={join}>Join</Button>
