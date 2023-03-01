@@ -16,8 +16,6 @@ export default function GameDetails() {
   const game = useGameUpdates(gameId);
 
   useEffect(() => {
-    console.log(`Current notifcation permission: ${window.Notification.permission}`);
-
     (async function () {
       try {
         if (window && window.Notification && window.Notification.permission !== 'denied') {
