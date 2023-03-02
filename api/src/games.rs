@@ -380,6 +380,11 @@ pub async fn advance_game(
     game_id: &str,
     data: Json<AdvanceGameData>,
 ) -> Result<NoContent> {
+    // Get the current state of the game and the next player.
+    // If the next player != data.player_id then exit gracefully.
+    // Calculate the next state of the game, the player_id's new lives, and the next next player.
+    // Transactionally update the games.next_player and the player_id.lives
+    // Publish an update to the queue
     sqlx::query(
         "update participations
         set lives = lives + ($1)
